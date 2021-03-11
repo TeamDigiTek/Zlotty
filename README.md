@@ -1,2 +1,2 @@
-# Digitek-Eksamen
+# Zlotty
 Digitek Eksamens Repo
