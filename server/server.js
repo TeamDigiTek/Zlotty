@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
+const PORT = process.env.port || 3000;
 
 const app = express();
 
@@ -18,4 +19,4 @@ app.use(userRoutes);
 
 app.use(errorController.get404);
 
-app.listen(4000);
+app.listen(PORT);
