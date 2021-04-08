@@ -1,39 +1,48 @@
+//Definerer hvilke libraries vi bruger
 #include <SPI.h>
 #include <WiFi.h>
+#include "dht.h"
 
-char ssid[] = "Eucnvs-Guest"; //  your network SSID (name)
-//char pass[] = "";    // your network password (use for WPA, or use as key for WEP)
-//int keyIndex = 0;            // your network key Index number (needed only for WEP)
-
-int status = WL_IDLE_STATUS;
-// if you don't want to use DNS (and reduce your sketch size)
-// use the numeric IP instead of the name for the server:
-//IPAddress server(74,125,232,128);  // numeric IP for Google (no DNS)
-char server[] = "10.138.98.238";    // name address for Google (using DNS)
-
-// Initialize the Ethernet client library
-// with the IP address and port of the server
-// that you want to connect to (port 80 is default for HTTP):
-
+// Initialize the Wifi client library
 WiFiClient client;
 
+//Network SSID (navn) & Password kommenteret ud
+char ssid[] = "OnePlus 7T Pro";
+// char pass[] = "rfwh3749";
+//int keyIndex = 0;            // your network key Index number (needed only for WEP)
+
+//Erklærer at wifi status pt. er IDLE
+int status = WL_IDLE_STATUS;
+
+
+// server address:
+char server[] = "5.103.154.120";
+//For Patrick på skole-wifi server(10.138.98.238);
+//For Patrick Hjemme (5.103.154.120);
+
+// Tid siden sidste server forbindelse, i ms.
+unsigned long lastConnectionTime = 0;            
+
+//Forsinkelse mellem check efter ny ordre
+const unsigned long postingInterval = 10L * 1000L;
+
+//Hvad der køres i startup
 void setup() {
 
-  //Initialize serial and wait for port to open:
-
+  //Tænder 'serial' og venter på porten åbner
   Serial.begin(9600);
 
   while (!Serial) {
 
-    ; // wait for serial port to connect. Needed for native USB port only
+    ; // Venter på USB forbindelse (HVIS USB BRUGES)
 
   }
 
-  // check for the presence of the shield:
+  // Checker om WIFI skjoldet er tilstede:
 
   if (WiFi.status() == WL_NO_SHIELD) {
 
-    Serial.println("WiFi shield not present");
+    Serial.println("WiFi shield not present. Please add and restart to continue");
 
     // don't continue:
 
@@ -41,62 +50,28 @@ void setup() {
 
   }
 
+  //Checker om WIFI modulets skjold er opdateret til en version der kan håndterer websocket
   String fv = WiFi.firmwareVersion();
-
   if (fv != "1.1.0") {
-
     Serial.println("Please upgrade the firmware");
-
   }
 
-  // attempt to connect to Wifi network:
+  // Hvis ikke WIFI (WL) er connected, forsøg at forbind:
 
   while (status != WL_CONNECTED) {
-
     Serial.print("Attempting to connect to SSID: ");
-
     Serial.println(ssid);
-
-    // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
-
     status = WiFi.begin(ssid);
-
-    // wait 10 seconds for connection:
-
-    delay(10000);
+    delay(1000);
 
   }
 
-  Serial.println("Connected to wifi");
-
+  // Nu hvor du er forbundet, så console logger vi WIFI status:
   printWifiStatus();
-
-  Serial.println("\nStarting connection to server...");
-
-  // if you get a connection, report back via serial:
-
-  if (client.connect(server, 3000)) {
-
-    Serial.println("connected to server");
-
-    // Make a HTTP request:
-
-    client.println("GET / HTTP/1.1");
-
-    client.println("Host: 10.138.98.238");
-
-    client.println("Connection: close");
-
-    client.println();
-
-  }
 }
 
 void loop() {
-
-  // if there are incoming bytes available
-
-  // from the server, read them and print them:
+  //PRINTER HTML KODEN - DETTE ER FOR DEBUG SKYLD OG OPDATERES SENERE
 
   while (client.available()) {
 
@@ -105,32 +80,65 @@ void loop() {
     Serial.write(c);
 
   }
-  // if the server's disconnected, stop the client:
 
-  if (!client.connected()) {
+  // Hvis der er gået mere end tid mellem forbindelserne, end den specificerede postingInterval,
+  // Forbind da igen
+  if (millis() - lastConnectionTime > postingInterval) {
 
-    Serial.println();
+    httpRequest();
 
-    Serial.println("disconnecting from server.");
+  }
 
-    client.stop();
+}
 
-    // do nothing forevermore:
+// Laver en HTTP forbindelse til serveren:
+void httpRequest() {
 
-    while (true);
+  // For en sikkerhedsskyld lukker vi lige alle forbindelserne.
+
+  // Dette åbner socketen på WIFI skjoldet
+
+  client.stop();
+
+  // Hvis connection er successfuld:
+  //Port 3000 for Patricks setup
+
+  if (client.connect(server, 3000)) {
+
+    Serial.println("connecting...");
+
+    // send en HTTP GET/PUT request:
+
+    client.println("GET / HTTP/1.1");
+
+    client.println("Host: 5.103.154.120");
+
+    client.println("Connection: close");
+
+    client.println();
+
+    // Noterer sidste connection tid:
+
+    lastConnectionTime = millis();
+
+  } else {
+
+    // Hvis ikke du kan forbinde:
+
+    Serial.println("connection failed");
 
   }
 }
 
 void printWifiStatus() {
 
-  // print the SSID of the network you're attached to:
+  // Information om WIFI du er forbundet til:
 
   Serial.print("SSID: ");
 
   Serial.println(WiFi.SSID());
 
-  // print your WiFi shield's IP address:
+  // WIFI skjoldets IP address:
 
   IPAddress ip = WiFi.localIP();
 
@@ -138,7 +146,7 @@ void printWifiStatus() {
 
   Serial.println(ip);
 
-  // print the received signal strength:
+  // Signal styrken:
 
   long rssi = WiFi.RSSI();
 
