@@ -1,34 +1,37 @@
 //Definerer hvilke libraries vi bruger
 #include <SPI.h>
 #include <WiFi.h>
-#include "dht.h"
+
 
 // Initialize the Wifi client library
 WiFiClient client;
 
 //Network SSID (navn) & Password kommenteret ud
-char ssid[] = "OnePlus 7T Pro";
+char ssid[] = "Eucnvs-Guest";
 // char pass[] = "rfwh3749";
 //int keyIndex = 0;            // your network key Index number (needed only for WEP)
 
 //Erklærer at wifi status pt. er IDLE
 int status = WL_IDLE_STATUS;
 
+boolean save = false;
+
+unsigned long lastConnectionTime = 0;            // last time you connected to the server, in milliseconds
+
+const unsigned long postingInterval = 10L * 1000L; // delay between updates, in milliseconds
+
+String recievedData = "";
 
 // server address:
-char server[] = "5.103.154.120";
+char server[] = "10.138.100.169";
 //For Patrick på skole-wifi server(10.138.98.238);
 //For Patrick Hjemme (5.103.154.120);
-
-// Tid siden sidste server forbindelse, i ms.
-unsigned long lastConnectionTime = 0;            
-
-//Forsinkelse mellem check efter ny ordre
-const unsigned long postingInterval = 10L * 1000L;
 
 //Hvad der køres i startup
 void setup() {
 
+  pinMode(5, OUTPUT);
+  pinMode(9, OUTPUT);
   //Tænder 'serial' og venter på porten åbner
   Serial.begin(9600);
 
@@ -62,7 +65,6 @@ void setup() {
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);
     status = WiFi.begin(ssid);
-    delay(1000);
 
   }
 
@@ -71,59 +73,78 @@ void setup() {
 }
 
 void loop() {
-  //PRINTER HTML KODEN - DETTE ER FOR DEBUG SKYLD OG OPDATERES SENERE
+
+  // if there's incoming data from the net connection.
+
+  // send it out the serial port.  This is for debugging
+
+  // purposes only:
 
   while (client.available()) {
-
     char c = client.read();
+    if (c == '{') {
+      save = true;
+    } else if (c == '}') {
+      save = false;
+    } else {
+ 
+    }
 
-    Serial.write(c);
-
+    if (save == true) {
+      recievedData += String(c);
+    } else {
+      //...
+    }
   }
 
-  // Hvis der er gået mere end tid mellem forbindelserne, end den specificerede postingInterval,
-  // Forbind da igen
-  if (millis() - lastConnectionTime > postingInterval) {
-
-    httpRequest();
-
-  }
-
+    // if ten seconds have passed since your last connection,
+    // then connect again and send data:
+    if (millis() - lastConnectionTime > postingInterval) {
+      httpRequest();
+      Serial.println(recievedData);
+      Zlotty(recievedData);
+      recievedData.remove(0, recievedData.length());
+    }
 }
 
-// Laver en HTTP forbindelse til serveren:
+// this method makes a HTTP connection to the server:
 void httpRequest() {
 
-  // For en sikkerhedsskyld lukker vi lige alle forbindelserne.
+  // close any connection before send a new request.
 
-  // Dette åbner socketen på WIFI skjoldet
+  // This will free the socket on the WiFi shield
 
   client.stop();
 
-  // Hvis connection er successfuld:
-  //Port 3000 for Patricks setup
+  // if there's a successful connection:
 
   if (client.connect(server, 3000)) {
 
+    Serial.println();
+    
     Serial.println("connecting...");
 
-    // send en HTTP GET/PUT request:
+    // send the HTTP PUT request:
 
-    client.println("GET / HTTP/1.1");
+    client.println("GET /arduino HTTP/1.1");
 
-    client.println("Host: 5.103.154.120");
+    client.print("Host: ");
+
+    client.println(server);
+
+    client.println("User-Agent: ArduinoWiFi/1.1");
 
     client.println("Connection: close");
 
     client.println();
 
-    // Noterer sidste connection tid:
+    // note the time that the connection was made:
 
     lastConnectionTime = millis();
 
   } else {
 
-    // Hvis ikke du kan forbinde:
+    // if you couldn't make a connection:
 
     Serial.println("connection failed");
 
@@ -132,13 +153,13 @@ void httpRequest() {
 
 void printWifiStatus() {
 
-  // Information om WIFI du er forbundet til:
+  // print the SSID of the network you're attached to:
 
   Serial.print("SSID: ");
 
   Serial.println(WiFi.SSID());
 
-  // WIFI skjoldets IP address:
+  // print your WiFi shield's IP address:
 
   IPAddress ip = WiFi.localIP();
 
@@ -146,7 +167,7 @@ void printWifiStatus() {
 
   Serial.println(ip);
 
-  // Signal styrken:
+  // print the received signal strength:
 
   long rssi = WiFi.RSSI();
 
@@ -155,4 +176,61 @@ void printWifiStatus() {
   Serial.print(rssi);
 
   Serial.println(" dBm");
+}
+
+
+
+void Zlotty(String data) {
+  int posStart = data.indexOf(':');
+  int posSlut = data.indexOf(',');
+  String valString = data.substring(posStart+1, posSlut);
+  int val = valString.toInt();
+  Serial.println("Din substring blev til: " + valString);
+  switch (val) {
+    case 1:
+      Serial.print("Din case blev nr.");
+      Serial.println(val);
+      digitalWrite(9, HIGH);
+      digitalWrite(5, LOW);
+      break;
+    case 2:
+      Serial.print("Din case blev nr.");
+      Serial.println(val);
+      digitalWrite(9, LOW);
+      digitalWrite(5, HIGH);
+      break;
+    case 3:
+      Serial.print("Din case blev nr.");
+      Serial.println(val);
+      digitalWrite(9, HIGH);
+      digitalWrite(5, HIGH);
+      break;
+    case 4:
+      Serial.print("Din case blev nr.");
+      Serial.println(val);
+      break;
+    case 5:
+      Serial.print("Din case blev nr.");
+      Serial.println(val);
+      break;
+    case 6:
+      Serial.print("Din case blev nr.");
+      Serial.println(val);
+      break;
+    case 7:
+      Serial.print("Din case blev nr.");
+      Serial.println(val);
+      break;
+    case 8:
+      Serial.print("Din case blev nr.");
+      Serial.println(val);
+      break;
+    default:
+      Serial.print("Din case blev nr.");
+      Serial.println("Default");
+      digitalWrite(9, LOW);
+      digitalWrite(5, LOW);
+      break;
+      
+  }
 }
