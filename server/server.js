@@ -19,4 +19,6 @@ app.use(userRoutes);
 
 app.use(errorController.get404);
 
-app.listen(PORT);
+app.listen(PORT, () => {
+    console.log(`Listening on port ${PORT}`);
+});

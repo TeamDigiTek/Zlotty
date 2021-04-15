@@ -5,6 +5,166 @@
 <%- include('../includes/navigation.ejs') %>
 
 <main>
-    <h1>Welcome Home!</h1>
+    <div class="grid">
+        <div class="card">
+            <header class="card__header">
+                <h3 class="card__title">Arduino Handlinger</h3>
+            </header>
+            <div class="card__content">
+                <ul class="card__list">
+                    <li>item 1</li>
+                    <li>item 2</li>
+                    <li>item 3</li>
+                    <li>item 4</li>
+                    <li>item 5</li>
+                    <li>item 6</li>
+                    <li>item 7</li>
+                    <li>item 8</li>
+                    <li>item 9</li>
+                    <li>item 10</li>
+                </ul>
+            </div>
+        </div>
+        <div class="card">
+            <header class="card__header">
+                <h3 class="card__title">Registrerede Sensorer</h3>
+            </header>
+            <div class="card__content">
+                <ul class="card__list">
+                    <li>item 1</li>
+                    <li>item 2</li>
+                    <li>item 3</li>
+                    <li>item 4</li>
+                    <li>item 5</li>
+                    <li>item 6</li>
+                    <li>item 7</li>
+                    <li>item 8</li>
+                    <li>item 9</li>
+                    <li>item 10</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="canvas_container">
+        <div class="container">
+            <canvas id="indeklima"></canvas>
+        </div>
+        <div class="container">
+            <canvas id="vejr"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let ctx1 = document.getElementById('indeklima').getContext('2d');
+        let indeklima = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [
+                    {
+                        label: 'Dataset 1',
+                        data: [12, 19, 3, 5, 2, 3],
+                        borderColor: 'rgba(255,0,0,0.5)',
+                        backgroundColor: 'rgba(255,0,0,0.5)',
+                    },
+                    {
+                        label: 'Dataset 2',
+                        data: [16, 12, 5, 10, 12, 8],
+                        borderColor: 'rgba(0,0,255,0.5)',
+                        backgroundColor: 'rgba(0,0,255,0.5)',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Indeklima Chart'
+                    }
+                },
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Month'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Temperature'
+                        }
+                    }
+                }
+            },
+        });
+
+        let ctx2 = document.getElementById('vejr').getContext('2d');
+        let vejr = new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [
+                    {
+                        label: 'Dataset 1',
+                        data: [12, 19, 3, 5, 2, 3],
+                        borderColor: 'rgba(255,0,0,0.5)',
+                        backgroundColor: 'rgba(255,0,0,0.5)',
+                    },
+                    {
+                        label: 'Dataset 2',
+                        data: [16, 12, 5, 10, 12, 8],
+                        borderColor: 'rgba(0,0,255,0.5)',
+                        backgroundColor: 'rgba(0,0,255,0.5)',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Vejr Chart'
+                    }
+                },
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Month'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Temperature'
+                        }
+                    }
+                }
+            },
+        });
+    </script>
+
 </main>
 <%- include('../includes/end.ejs') %>
