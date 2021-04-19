@@ -11,12 +11,15 @@ dht DHT;
 int motorPin = 8;
 int mSpeed = 100;
 
+boolean getting = true;
 
 //LED PINS!!!
 int gron = 5;
 int rod = 2;
 int hvid = 3;
 int bla = 4;
+
+String sendCont = "";
 
 // Initialize the Wifi client library
 WiFiClient client;
@@ -37,7 +40,7 @@ boolean save = false;
 unsigned long lastConnectionTime = 0;
 
 //Tid mellem forbindelser til websiden (x1000 for at få det i sekunder, fremfor milli)
-const unsigned long postingInterval = 10L * 1000L;
+const unsigned long postingInterval = 4L * 1000L;
 
 //Den string som vi har JSON der er cuttet til og lavet til string, i.
 String recievedData = "";
@@ -61,6 +64,7 @@ void setup() {
 
 
   //LED CHECK
+  Serial.println("-----------------------");
   Serial.println("LED START");
   digitalWrite(gron, HIGH);
   digitalWrite(rod, HIGH);
@@ -72,6 +76,7 @@ void setup() {
   digitalWrite(hvid, LOW);
   digitalWrite(bla, LOW);
   Serial.println("LED SLUT");
+  Serial.println("-----------------------");
   //Mens vi ikke er forbundet:
   while (!Serial) {// Venter på USB forbindelse (HVIS USB BRUGES)
   };
@@ -122,35 +127,38 @@ void loop() {
       //...
     }
   }
-
+  
     // Hvis der er gået lægnere end 'posing interval' siden sidste request
     // så forbind igen, og kør nedestående: 
     if (millis() - lastConnectionTime > postingInterval) {
       DHT.read11(dht_apin);
       Serial.print("Den nuværende temperatur er: ");
       Serial.println(DHT.temperature);
+      sendCont = String(DHT.temperature);
       //Kører connect funktionen til websocket
-      httpRequest();
-      //Skriver hvad vi har modtaget i console/serial for debugs skyld
-      Serial.println(recievedData);
-      //Kører en funktion der handler ud fra det vi modtog
+      if (getting) {
+      httpGETRequest();
       Zlotty(recievedData);
+      recievedData.remove(0, recievedData.length()); 
+      } else {
+      httpPOSTRequest();
+      }
+      //Skriver hvad vi har modtaget i console/serial for debugs skyld
+      //Kører en funktion der handler ud fra det vi modtog
       //Sletter modtaget data fra recievedData, så vi er klar til næste request
-      recievedData.remove(0, recievedData.length());
     }
 }
 
 // Kører en HTTP connection til websocket:
-void httpRequest() {
-
+void httpGETRequest() {
+  getting = true;
   //Sikrer os at vi har lukket alle forbindelser der tidligere var åben
   client.stop();
+  delay(50);
 
   // Hvis vi får en stabil forbindelse
 
   if (client.connect(server, 3000)) {
-
-    Serial.println();
 
     // sender HTTP GET request:
 
@@ -168,16 +176,50 @@ void httpRequest() {
 
     // noterer sidste connection tid
 
-    lastConnectionTime = millis();
-
   } else {
 
     // Hvis nu, vi desværre, ikke kan connecte:
 
-    Serial.println("Fejl: Ingen forbindelse");
+    Serial.println("Fejl: Ingen forbindelse på GET requesten");
 
   }
+  getting = false;
+  lastConnectionTime = millis();
 }
+
+void httpPOSTRequest() {
+  getting = false;
+  //Sikrer os at vi har lukket alle forbindelser der tidligere var åben
+  client.stop();
+  delay(50);
+
+  // Hvis vi får en stabil forbindelse
+
+  if (client.connect(server, 3000)) {
+    client.println("POST /arduino HTTP/1.1");
+    client.print("Host: ");
+    client.println(server);
+    client.println("Content-Type: application/x-www-form-urlencoded");
+    client.print("Content-Length: ");
+    client.println(sendCont.length());
+    client.println();
+    client.print(sendCont);
+    Serial.println();
+    Serial.println("-----------------------");
+    Serial.println("Sendt til server: " + sendCont);
+    Serial.println("-----------------------");    
+    Serial.println();
+    lastConnectionTime = millis();
+  } else {
+
+    // Hvis nu, vi desværre, ikke kan connecte:
+
+    Serial.println("Fejl: Ingen forbindelse på POST requesten");
+
+  }
+  getting = true;
+}
+
 
 
 //Skriver info om vores WiFi
@@ -215,6 +257,8 @@ void Zlotty(String data) {
   int posSlut = data.indexOf(',');
   String valString = data.substring(posStart+1, posSlut);
   int val = valString.toInt();
+  Serial.println();
+  Serial.println("-----------------------");
   Serial.println("Din substring blev til: " + valString);
   switch (val) {
     case 1:
@@ -266,11 +310,15 @@ void Zlotty(String data) {
       Serial.println(val);
       break;
     default:
-      Serial.print("Din case blev nr.");
+      Serial.print("Din case blev ");
       Serial.println("Default");
-      digitalWrite(9, LOW);
-      digitalWrite(5, LOW);
+      digitalWrite(gron, LOW);
+      digitalWrite(rod, LOW);
+      digitalWrite(hvid, LOW);
+      digitalWrite(bla, LOW);
       break;
       
   }
+  Serial.println("-----------------------");
+  Serial.println();
 }
