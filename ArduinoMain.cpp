@@ -2,6 +2,9 @@
 #include <SPI.h>
 #include <WiFi.h>
 
+//Definerer blæserens (motor) pin og motorSpeed;
+int motorPin = 8;
+int mSpeed = 100;
 
 // Initialize the Wifi client library
 WiFiClient client;
@@ -14,55 +17,55 @@ char ssid[] = "Eucnvs-Guest";
 //Erklærer at wifi status pt. er IDLE
 int status = WL_IDLE_STATUS;
 
+//Boolean til om vi skal gemem JSON data fra Patricks websocket
 boolean save = false;
 
-unsigned long lastConnectionTime = 0;            // last time you connected to the server, in milliseconds
 
-const unsigned long postingInterval = 10L * 1000L; // delay between updates, in milliseconds
+//Variable til at gemme sidst vi var connected til websocket - starter selvfølgelig på 0 da vi ikke har været connected. (Er i millisekunder)
+unsigned long lastConnectionTime = 0;
 
+//Tid mellem forbindelser til websiden (x1000 for at få det i sekunder, fremfor milli)
+const unsigned long postingInterval = 10L * 1000L;
+
+//Den string som vi har JSON der er cuttet til og lavet til string, i.
 String recievedData = "";
 
 // server address:
-char server[] = "10.138.100.169";
+char server[] = "10.138.99.56";
 //For Patrick på skole-wifi server(10.138.98.238);
 //For Patrick Hjemme (5.103.154.120);
 
 //Hvad der køres i startup
 void setup() {
 
+  //2 stk. LED på hhv. pin 5 og 9, samt en motor på pin 8
   pinMode(5, OUTPUT);
   pinMode(9, OUTPUT);
+  analogWrite(8, mSpeed);
   //Tænder 'serial' og venter på porten åbner
   Serial.begin(9600);
 
-  while (!Serial) {
-
-    ; // Venter på USB forbindelse (HVIS USB BRUGES)
-
-  }
+  //Mens vi ikke er forbundet:
+  while (!Serial) {// Venter på USB forbindelse (HVIS USB BRUGES)
+  };
 
   // Checker om WIFI skjoldet er tilstede:
-
   if (WiFi.status() == WL_NO_SHIELD) {
+    Serial.println("WiFi skjoldet er ikke tilstede - Det ville være klogt at tilføje det. :)");
 
-    Serial.println("WiFi shield not present. Please add and restart to continue");
-
-    // don't continue:
-
+    //Så længe det er true, så venter vi.
     while (true);
-
   }
 
   //Checker om WIFI modulets skjold er opdateret til en version der kan håndterer websocket
   String fv = WiFi.firmwareVersion();
   if (fv != "1.1.0") {
-    Serial.println("Please upgrade the firmware");
+    Serial.println("Dit skjold er ikke opdateret til at understøtte websocket - Opdater det, og prøv igen");
   }
 
   // Hvis ikke WIFI (WL) er connected, forsøg at forbind:
-
   while (status != WL_CONNECTED) {
-    Serial.print("Attempting to connect to SSID: ");
+    Serial.print("Forbinder til netværk: ");
     Serial.println(ssid);
     status = WiFi.begin(ssid);
 
@@ -74,12 +77,8 @@ void setup() {
 
 void loop() {
 
-  // if there's incoming data from the net connection.
-
-  // send it out the serial port.  This is for debugging
-
-  // purposes only:
-
+  //Mens vi er forbundet til websocket, så alt vi modtager kørers igennem denne algoritme
+  //Algoritmens formål er at skære headsers væk fra JSON, så vi kun får de keys og values vi ønsker
   while (client.available()) {
     char c = client.read();
     if (c == '{') {
@@ -97,26 +96,27 @@ void loop() {
     }
   }
 
-    // if ten seconds have passed since your last connection,
-    // then connect again and send data:
+    // Hvis der er gået lægnere end 'posing interval' siden sidste request
+    // så forbind igen, og kør nedestående: 
     if (millis() - lastConnectionTime > postingInterval) {
+      //Kører connect funktionen til websocket
       httpRequest();
+      //Skriver hvad vi har modtaget i console/serial for debugs skyld
       Serial.println(recievedData);
+      //Kører en funktion der handler ud fra det vi modtog
       Zlotty(recievedData);
+      //Sletter modtaget data fra recievedData, så vi er klar til næste request
       recievedData.remove(0, recievedData.length());
     }
 }
 
-// this method makes a HTTP connection to the server:
+// Kører en HTTP connection til websocket:
 void httpRequest() {
 
-  // close any connection before send a new request.
-
-  // This will free the socket on the WiFi shield
-
+  //Sikrer os at vi har lukket alle forbindelser der tidligere var åben
   client.stop();
 
-  // if there's a successful connection:
+  // Hvis vi får en stabil forbindelse
 
   if (client.connect(server, 3000)) {
 
@@ -124,7 +124,7 @@ void httpRequest() {
     
     Serial.println("connecting...");
 
-    // send the HTTP PUT request:
+    // sender HTTP GET request:
 
     client.println("GET /arduino HTTP/1.1");
 
@@ -138,28 +138,30 @@ void httpRequest() {
 
     client.println();
 
-    // note the time that the connection was made:
+    // noterer sidste connection tid
 
     lastConnectionTime = millis();
 
   } else {
 
-    // if you couldn't make a connection:
+    // Hvis nu, vi desværre, ikke kan connecte:
 
-    Serial.println("connection failed");
+    Serial.println("Fejl: Ingen forbindelse");
 
   }
 }
 
+
+//Skriver info om vores WiFi
 void printWifiStatus() {
 
-  // print the SSID of the network you're attached to:
+  // Skriver WIFI SSID:
 
   Serial.print("SSID: ");
 
   Serial.println(WiFi.SSID());
 
-  // print your WiFi shield's IP address:
+  // WIFI skjoldets IP:
 
   IPAddress ip = WiFi.localIP();
 
@@ -167,7 +169,7 @@ void printWifiStatus() {
 
   Serial.println(ip);
 
-  // print the received signal strength:
+  // Signal styrken:
 
   long rssi = WiFi.RSSI();
 
@@ -208,6 +210,7 @@ void Zlotty(String data) {
     case 4:
       Serial.print("Din case blev nr.");
       Serial.println(val);
+      digitalWrite(8, HIGH);
       break;
     case 5:
       Serial.print("Din case blev nr.");
@@ -226,7 +229,7 @@ void Zlotty(String data) {
       Serial.println(val);
       break;
     default:
-      Serial.print("Din case blev nr.");
+      Serial.print("Din case blev nr. ");
       Serial.println("Default");
       digitalWrite(9, LOW);
       digitalWrite(5, LOW);
