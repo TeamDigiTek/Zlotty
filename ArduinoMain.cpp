@@ -1,10 +1,22 @@
 //Definerer hvilke libraries vi bruger
 #include <SPI.h>
 #include <WiFi.h>
+#include <dht.h>
+
+#define dht_apin A0
+
+dht DHT;
 
 //Definerer blæserens (motor) pin og motorSpeed;
 int motorPin = 8;
 int mSpeed = 100;
+
+
+//LED PINS!!!
+int gron = 5;
+int rod = 2;
+int hvid = 3;
+int bla = 4;
 
 // Initialize the Wifi client library
 WiFiClient client;
@@ -39,12 +51,27 @@ char server[] = "10.138.99.56";
 void setup() {
 
   //2 stk. LED på hhv. pin 5 og 9, samt en motor på pin 8
-  pinMode(5, OUTPUT);
-  pinMode(9, OUTPUT);
+  pinMode(gron, OUTPUT);
+  pinMode(rod, OUTPUT);
+  pinMode(hvid, OUTPUT);
+  pinMode(bla, OUTPUT);
   analogWrite(8, mSpeed);
   //Tænder 'serial' og venter på porten åbner
   Serial.begin(9600);
 
+
+  //LED CHECK
+  Serial.println("LED START");
+  digitalWrite(gron, HIGH);
+  digitalWrite(rod, HIGH);
+  digitalWrite(hvid, HIGH);
+  digitalWrite(bla, HIGH);
+  delay(2000);
+  digitalWrite(gron, LOW);
+  digitalWrite(rod, LOW);
+  digitalWrite(hvid, LOW);
+  digitalWrite(bla, LOW);
+  Serial.println("LED SLUT");
   //Mens vi ikke er forbundet:
   while (!Serial) {// Venter på USB forbindelse (HVIS USB BRUGES)
   };
@@ -99,6 +126,9 @@ void loop() {
     // Hvis der er gået lægnere end 'posing interval' siden sidste request
     // så forbind igen, og kør nedestående: 
     if (millis() - lastConnectionTime > postingInterval) {
+      DHT.read11(dht_apin);
+      Serial.print("Den nuværende temperatur er: ");
+      Serial.println(DHT.temperature);
       //Kører connect funktionen til websocket
       httpRequest();
       //Skriver hvad vi har modtaget i console/serial for debugs skyld
@@ -121,8 +151,6 @@ void httpRequest() {
   if (client.connect(server, 3000)) {
 
     Serial.println();
-    
-    Serial.println("connecting...");
 
     // sender HTTP GET request:
 
@@ -192,25 +220,34 @@ void Zlotty(String data) {
     case 1:
       Serial.print("Din case blev nr.");
       Serial.println(val);
-      digitalWrite(9, HIGH);
-      digitalWrite(5, LOW);
+      digitalWrite(gron, HIGH);
+      digitalWrite(rod, LOW);
+      digitalWrite(hvid, LOW);
+      digitalWrite(bla, LOW);
       break;
     case 2:
       Serial.print("Din case blev nr.");
       Serial.println(val);
-      digitalWrite(9, LOW);
-      digitalWrite(5, HIGH);
+      digitalWrite(gron, LOW);
+      digitalWrite(rod, HIGH);
+      digitalWrite(hvid, LOW);
+      digitalWrite(bla, LOW);
       break;
     case 3:
       Serial.print("Din case blev nr.");
       Serial.println(val);
-      digitalWrite(9, HIGH);
-      digitalWrite(5, HIGH);
+      digitalWrite(gron, LOW);
+      digitalWrite(rod, LOW);
+      digitalWrite(hvid, HIGH);
+      digitalWrite(bla, LOW);
       break;
     case 4:
       Serial.print("Din case blev nr.");
       Serial.println(val);
-      digitalWrite(8, HIGH);
+      digitalWrite(gron, LOW);
+      digitalWrite(rod, LOW);
+      digitalWrite(hvid, LOW);
+      digitalWrite(bla, HIGH);
       break;
     case 5:
       Serial.print("Din case blev nr.");
@@ -229,7 +266,7 @@ void Zlotty(String data) {
       Serial.println(val);
       break;
     default:
-      Serial.print("Din case blev nr. ");
+      Serial.print("Din case blev nr.");
       Serial.println("Default");
       digitalWrite(9, LOW);
       digitalWrite(5, LOW);
