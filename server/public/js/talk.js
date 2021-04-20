@@ -1,8 +1,13 @@
+const socket = io();
+socket.on("connect", () => {
+    console.log(socket.id)
+})
+
 // more documentation available at
 // https://github.com/tensorflow/tfjs-models/tree/master/speech-commands
 
 // the link to your model provided by Teachable Machine export panel
-const URL = "https://teachablemachine.withgoogle.com/models/BuWYBT5f_/";
+const URL = "https://teachablemachine.withgoogle.com/models/hTSO5lj1U/";
 
 async function createModel() {
     const checkpointURL = URL + "model.json"; // model topology
@@ -32,11 +37,28 @@ async function init() {
     // 1. A callback function that is invoked anytime a word is recognized.
     // 2. A configuration object with adjustable fields
     recognizer.listen(result => {
-        const scores = result.scores; // probability of prediction for each class
-        // render the probability scores per class
-        for (let i = 0; i < classLabels.length; i++) {
-            labelContainer.childNodes[i].innerHTML = classLabels[i] + ": " + result.scores[i].toFixed(2);
+
+        console.log(result.scores)
+        console.log(result.scores[0])
+
+        let word = result.scores.find(element => element > 0.75)
+        let index = result.scores.indexOf(word)
+
+        console.log(index)
+
+        if (index === 0) {
+            socket.emit("msg","0")
+            console.log("Case 0")
+        } else if (index === 1) {
+            socket.emit("msg", "1")
+            console.log("Case 1")
         }
+
+        // const scores = result.scores; // probability of prediction for each class
+        // // render the probability scores per class
+        // for (let i = 0; i < classLabels.length; i++) {
+        //     labelContainer.childNodes[i].innerHTML = classLabels[i] + ": " + result.scores[i].toFixed(2);
+        // }
     }, {
         includeSpectrogram: true, // in case listen should return result.spectrogram
         probabilityThreshold: 0.75,
