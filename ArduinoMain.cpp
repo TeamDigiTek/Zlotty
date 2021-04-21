@@ -9,7 +9,6 @@ dht DHT;
 
 //Definerer blæserens (motor) pin og motorSpeed;
 int motorPin = 8;
-int mSpeed = 100;
 
 boolean getting = true;
 
@@ -28,6 +27,7 @@ WiFiClient client;
 char ssid[] = "Eucnvs-Guest";
 // char pass[] = "rfwh3749";
 //int keyIndex = 0;            // your network key Index number (needed only for WEP)
+int PORT = 3000;
 
 //Erklærer at wifi status pt. er IDLE
 int status = WL_IDLE_STATUS;
@@ -46,9 +46,10 @@ const unsigned long postingInterval = 4L * 1000L;
 String recievedData = "";
 
 // server address:
-char server[] = "10.138.99.56";
+char server[] = "zlotty.herokuapp.com";
 //For Patrick på skole-wifi server(10.138.98.238);
 //For Patrick Hjemme (5.103.154.120);
+//For websid ( zlotty.herokuapp.com);
 
 //Hvad der køres i startup
 void setup() {
@@ -58,7 +59,7 @@ void setup() {
   pinMode(rod, OUTPUT);
   pinMode(hvid, OUTPUT);
   pinMode(bla, OUTPUT);
-  analogWrite(8, mSpeed);
+  pinMode(motorPin, OUTPUT);
   //Tænder 'serial' og venter på porten åbner
   Serial.begin(9600);
 
@@ -134,7 +135,7 @@ void loop() {
       DHT.read11(dht_apin);
       Serial.print("Den nuværende temperatur er: ");
       Serial.println(DHT.temperature);
-      sendCont = String(DHT.temperature);
+      sendCont = String(DHT.temperature) + "&" + String(DHT.humidity);
       //Kører connect funktionen til websocket
       if (getting) {
       httpGETRequest();
@@ -158,7 +159,7 @@ void httpGETRequest() {
 
   // Hvis vi får en stabil forbindelse
 
-  if (client.connect(server, 3000)) {
+  if (client.connect(server, 80)) {
 
     // sender HTTP GET request:
 
@@ -195,7 +196,7 @@ void httpPOSTRequest() {
 
   // Hvis vi får en stabil forbindelse
 
-  if (client.connect(server, 3000)) {
+  if (client.connect(server, 80)) {
     client.println("POST /arduino HTTP/1.1");
     client.print("Host: ");
     client.println(server);
@@ -205,9 +206,9 @@ void httpPOSTRequest() {
     client.println();
     client.print(sendCont);
     Serial.println();
-    Serial.println("-----------------------");
+    Serial.println("----------------------->>>");
     Serial.println("Sendt til server: " + sendCont);
-    Serial.println("-----------------------");    
+    Serial.println("----------------------->>>");    
     Serial.println();
     lastConnectionTime = millis();
   } else {
@@ -254,11 +255,10 @@ void printWifiStatus() {
 
 void Zlotty(String data) {
   int posStart = data.indexOf(':');
-  int posSlut = data.indexOf(',');
-  String valString = data.substring(posStart+1, posSlut);
+  String valString = data.substring(posStart+2, data.length()-1);
   int val = valString.toInt();
   Serial.println();
-  Serial.println("-----------------------");
+  Serial.println("<<<-----------------------");
   Serial.println("Din substring blev til: " + valString);
   switch (val) {
     case 1:
@@ -297,28 +297,17 @@ void Zlotty(String data) {
       Serial.print("Din case blev nr.");
       Serial.println(val);
       break;
-    case 6:
-      Serial.print("Din case blev nr.");
-      Serial.println(val);
-      break;
-    case 7:
-      Serial.print("Din case blev nr.");
-      Serial.println(val);
-      break;
-    case 8:
-      Serial.print("Din case blev nr.");
-      Serial.println(val);
-      break;
     default:
+    //Gælder også case 0, som er baggrundsstøj
       Serial.print("Din case blev ");
       Serial.println("Default");
-      digitalWrite(gron, LOW);
-      digitalWrite(rod, LOW);
-      digitalWrite(hvid, LOW);
-      digitalWrite(bla, LOW);
+      digitalWrite(gron, HIGH);
+      digitalWrite(rod, HIGH);
+      digitalWrite(hvid, HIGH);
+      digitalWrite(bla, HIGH);
       break;
       
   }
-  Serial.println("-----------------------");
+  Serial.println("<<<-----------------------");
   Serial.println();
 }
