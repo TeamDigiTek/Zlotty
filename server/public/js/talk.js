@@ -58,7 +58,7 @@ async function init() {
         let json = {"sensor": data}
 
         $.ajax({
-            url: "http://localhost:3000/arduinoTalk",
+            url: "https://zlotty.herokuapp.com/arduinoTalk",
             type: "POST",
             data: json
         });
