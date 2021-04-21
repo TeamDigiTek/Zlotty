@@ -1,8 +1,3 @@
-const socket = io();
-socket.on("connect", () => {
-    console.log(socket.id)
-})
-
 // more documentation available at
 // https://github.com/tensorflow/tfjs-models/tree/master/speech-commands
 
@@ -37,22 +32,36 @@ async function init() {
     // 1. A callback function that is invoked anytime a word is recognized.
     // 2. A configuration object with adjustable fields
     recognizer.listen(result => {
-
-        console.log(result.scores)
-        console.log(result.scores[0])
-
         let word = result.scores.find(element => element > 0.75)
         let index = result.scores.indexOf(word)
 
         console.log(index)
 
+        let data;
         if (index === 0) {
-            socket.emit("msg","0")
+            data = 0
             console.log("Case 0")
         } else if (index === 1) {
-            socket.emit("msg", "1")
+            data = 1
             console.log("Case 1")
+        }else if (index === 2) {
+            data = 2
+            console.log("Case 2")
+        }else if (index === 3) {
+            data = 3
+            console.log("Case 3")
+        }else if (index === 4) {
+            data = 4
+            console.log("Case 4")
         }
+
+        let json = {"sensor": data}
+
+        $.ajax({
+            url: "http://localhost:3000/arduinoTalk",
+            type: "POST",
+            data: json
+        });
 
         // const scores = result.scores; // probability of prediction for each class
         // // render the probability scores per class
@@ -67,5 +76,5 @@ async function init() {
     });
 
     // Stop the recognition in 5 seconds.
-    setTimeout(() => recognizer.stopListening(), 5000);
+    setTimeout(() => recognizer.stopListening(), 3000);
 }

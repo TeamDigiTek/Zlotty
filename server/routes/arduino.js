@@ -7,6 +7,6 @@ const router = express.Router();
 // Arduino Routes
 router.get('/arduino', arduinoController.getArduino)
 router.post('/arduino', arduinoController.postArduino)
-router.post('/arduinoAPI', arduinoController.postArduinoAPI)
+router.post('/arduinoAPI', arduinoController.postArduinoTalk)
 
 module.exports = router;
