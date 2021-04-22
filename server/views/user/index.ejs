@@ -1,6 +1,7 @@
 <%- include('../includes/head.ejs') %>
 </head>
 
+<!--suppress JSUnfilteredForInLoop -->
 <body>
 <%- include('../includes/navigation.ejs') %>
 
@@ -53,117 +54,197 @@
             <canvas id="vejr"></canvas>
         </div>
     </div>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
     <script>
-        let ctx1 = document.getElementById('indeklima').getContext('2d');
-        let indeklima = new Chart(ctx1, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [
-                    {
-                        label: 'Dataset 1',
-                        data: [12, 19, 3, 5, 2, 3],
-                        borderColor: 'rgba(255,0,0,0.5)',
-                        backgroundColor: 'rgba(255,0,0,0.5)',
-                    },
-                    {
-                        label: 'Dataset 2',
-                        data: [16, 12, 5, 10, 12, 8],
-                        borderColor: 'rgba(0,0,255,0.5)',
-                        backgroundColor: 'rgba(0,0,255,0.5)',
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    title: {
-                        display: true,
-                        text: 'Indeklima Chart'
-                    }
-                },
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
-                scales: {
-                    x: {
-                        display: true,
-                        title: {
-                            display: true,
-                            text: 'Month'
-                        }
-                    },
-                    y: {
-                        display: true,
-                        title: {
-                            display: true,
-                            text: 'Temperature'
-                        }
-                    }
-                }
-            },
-        });
 
-        let ctx2 = document.getElementById('vejr').getContext('2d');
-        let vejr = new Chart(ctx2, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [
-                    {
-                        label: 'Dataset 1',
-                        data: [12, 19, 3, 5, 2, 3],
-                        borderColor: 'rgba(255,0,0,0.5)',
-                        backgroundColor: 'rgba(255,0,0,0.5)',
-                    },
-                    {
-                        label: 'Dataset 2',
-                        data: [16, 12, 5, 10, 12, 8],
-                        borderColor: 'rgba(0,0,255,0.5)',
-                        backgroundColor: 'rgba(0,0,255,0.5)',
+        let humid = []
+        let temp = []
+
+        async function getData() {
+            let result = [];
+            await $.getJSON( "http://localhost:3000/api", (data) => {
+                $.each( data, (key, val) => {
+                    let obj = {
+                        "temp": val.temp,
+                        "humid": val.humid,
+                        "date": val.date
                     }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
+                    result.push(obj)
+                })
+            });
+
+            for (const num in result) {
+                humid.push({y: result[num].humid, x: result[num].date})
+                temp.push({y: result[num].temp, x: result[num].date})
+            }
+
+            const groups = (() => {
+                const byDay = (item) => moment(item.x).format('MM/DD/YYYY'),
+                    formin = (item) => byDay(item) + ' ' + moment(item.x).format('kk:mm')
+                    forHour = (item) => byDay(item) + ' ' + moment(item.x).format('kk:00'),
+                    by6Hour = (item) => {
+                        const m = moment(item.x);
+                        return byDay(item) + ' ' + ['first', 'second', 'third', 'fourth'][Number(m.format('k')) % 6] + ' 6 hours';
                     },
-                    title: {
-                        display: true,
-                        text: 'Vejr Chart'
+                    forMonth = (item) => moment(item.x).format('MMM YYYY'),
+                    forWeek = (item) => forMonth(item) + ' ' + moment(item.x).format('ww');
+                return {
+                    byDay,
+                    formin,
+                    forHour,
+                    by6Hour,
+                    forMonth,
+                    forWeek,
+                };
+            })();
+
+            let tempGroupedData = _.groupBy(temp, groups["formin"])
+            let humidGroupedData = _.groupBy(humid, groups["formin"])
+            console.log(humidGroupedData)
+
+            function average(data) {
+                let key = []
+                let value = []
+
+                let keys = Object.keys(data)
+
+                for (let i = 0; i < Object.keys(data).length; i++) {
+                    let tempArray = Object.values(data)[i]
+                    let sum = 0;
+                    for( let j = 0; j < tempArray.length; j++ ){
+                        sum += parseInt( tempArray[j].y, 10 );
                     }
-                },
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
-                scales: {
-                    x: {
-                        display: true,
-                        title: {
-                            display: true,
-                            text: 'Month'
-                        }
-                    },
-                    y: {
-                        display: true,
-                        title: {
-                            display: true,
-                            text: 'Temperature'
-                        }
-                    }
+                    let tempAvg = sum/tempArray.length
+                    key.push(keys[i])
+                    value.push(tempAvg)
+
+
                 }
-            },
-        });
+                return {
+                    key,
+                    value
+                }
+            }
+
+            let tempResult = average(tempGroupedData)
+            let humidResult = average(humidGroupedData)
+
+            let ctx1 = document.getElementById('indeklima').getContext('2d');
+            let indeklima = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: tempResult.key,
+                    datasets: [
+                        {
+                            label: 'Temperatur',
+                            data: tempResult.value,
+                            backgroundColor: 'rgba(0,152,255,0.5)',
+                            borderColor: 'rgb(0,152,255)',
+                            borderWidth: 1,
+                            tension: 0,
+                            pointBorderColor: 'rgba(255,255,255,1)',
+                            pointRadius: 3,
+                            pointStyle: 'circle'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Indeklima Chart'
+                        }
+                    },
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            },
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Temperature'
+                            },
+                            min: 0,
+                            max: 50,
+                        }
+                    }
+                },
+            });
+
+            let ctx2 = document.getElementById('vejr').getContext('2d');
+            let vejr = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: humidResult.key,
+                    datasets: [
+                        {
+                            label: 'Humidity',
+                            data: humidResult.value,
+                            borderColor: 'rgba(0,0,255,0.5)',
+                            backgroundColor: 'rgba(0,0,255,0.5)',
+                            borderWidth: 1,
+                            tension: 0,
+                            pointBorderColor: 'rgba(0,0,255,1)',
+                            pointRadius: 3,
+                            pointStyle: 'circle'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Vejr Chart'
+                        }
+                    },
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            },
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Temperature'
+                            },
+                            min: 0,
+                            max: 20,
+                        }
+                    }
+                },
+            });
+        }
+
+        getData()
+
     </script>
 
 </main>

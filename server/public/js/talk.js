@@ -41,7 +41,7 @@ async function init() {
         if (index === 0) {
             data = 0
             console.log("Case 0")
-        } else if (index === 1) {
+        }else if (index === 1) {
             data = 1
             console.log("Case 1")
         }else if (index === 2) {
@@ -53,12 +53,24 @@ async function init() {
         }else if (index === 4) {
             data = 4
             console.log("Case 4")
+        }else if (index === 5) {
+            data = 5
+            console.log("Case 5")
+        }else if (index === 6) {
+            data = 6
+            console.log("Case 6")
+        }else if (index === 7) {
+            data = 7
+            console.log("Case 7")
+        }else if (index === 8) {
+            data = 8
+            console.log("Case 8")
         }
 
         let json = {"sensor": data}
 
         $.ajax({
-            url: "https://zlotty.herokuapp.com/arduinoTalk",
+            url: "http://localhost:3000/arduinoTalk",
             type: "POST",
             data: json
         });
