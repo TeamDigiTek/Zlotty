@@ -1,3 +1,4 @@
+const Data = require('../model/data')
 let body;
 
 exports.postArduinoTalk = (req, res, next) => {
@@ -18,5 +19,15 @@ exports.postArduino = (req, res, next) => {
         "temp": keys[0],
         "humid": keys[1]
     }
-    console.log(json)
+    const data = new Data({
+        temp: Number(keys[0]),
+        humid: Number(keys[1])
+    })
+
+    data
+        .save()
+        .then(result => {
+            console.log('Created Data')
+        })
+        .catch(err => console.error(err))
 }

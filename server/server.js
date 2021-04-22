@@ -1,6 +1,8 @@
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose')
+const dotenv = require('dotenv').config();
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -21,6 +23,14 @@ app.use(arduinoRoutes);
 
 app.use(errorController.get404);
 
-app.listen(PORT, () => {
-    console.log(`Listening on port ${PORT}`);
-});
+mongoose
+    .connect(
+        process.env.DATABASE_URI
+    )
+    .then(result => {
+        app.listen(PORT);
+        console.log(`Listening on port ${PORT}`);
+    })
+    .catch(err => {
+        console.error(err)
+    })
