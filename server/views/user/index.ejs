@@ -63,7 +63,7 @@
 
         async function getData() {
             let result = [];
-            await $.getJSON( "http://localhost:3000/api", (data) => {
+            await $.getJSON( "https://zlotty.herokuapp.com/api", (data) => {
                 $.each( data, (key, val) => {
                     let obj = {
                         "temp": val.temp,

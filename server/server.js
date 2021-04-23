@@ -11,7 +11,7 @@ if (state === "development") {
 }
 
 let corsOptions = {
-    origin: 'http://localhost:3000',
+    origin: 'https://zlotty.herokuapp.com/',
     optionsSuccessStatus: 200 // For legacy browser support
 }
 
