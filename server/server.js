@@ -3,8 +3,12 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv').config();
 const PORT = process.env.PORT || 3000;
+
+const state = "production"
+if (state === "development") {
+    const dotenv = require('dotenv').config();
+}
 
 let corsOptions = {
     origin: 'http://localhost:3000',
