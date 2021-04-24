@@ -58,75 +58,102 @@
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
     <script>
 
+        // Danner 2 arrays til Humidity og Temperatur
         let humid = []
         let temp = []
 
+        // Kører vores function Async så vi kan sikrer at Jquery kan hente vores DB data fra API endpoint før resten af koden begynder.
         async function getData() {
+
+            // Array for vores resultater fra API endpoint.
             let result = [];
             await $.getJSON( "https://zlotty.herokuapp.com/api", (data) => {
                 $.each( data, (key, val) => {
+                    // Danner et JSON objekt og indsætter de forskellige værdier.
+                    // Dette gør at vi ikke får data som _id og andre MongoDB værdier vi ikke skal bruge.
                     let obj = {
                         "temp": val.temp,
                         "humid": val.humid,
                         "date": val.date
                     }
+                    // Skub obj til result.
                     result.push(obj)
                 })
             });
 
+            // Loop igennem vores resultater og skub nu værdierne separate fra hinanden, men med samme date.
+            // y og x er arbitrære, ik tænk over det ud over at det er dem vi tilgår i den anden algoritme.
             for (const num in result) {
                 humid.push({y: result[num].humid, x: result[num].date})
                 temp.push({y: result[num].temp, x: result[num].date})
             }
 
+            // For at gøre livet lidt letter når det kommer til tid og datoer.
+            // Så har vi valgt at gøre brug af momentjs, som hjælper med at parse, validere, manipulere og vise date/time i Javascript.
+            // For at gøre det lettere at gruppere vores værdier under tid, så kan vi danne os en skabelon, som gører brug af momentJs,
+            // til at skabe menneskelig læselig tid istedet for Epoch tid eks. 1619292583
+            // Her under er der tids skabeloner for dag, minut og time. Denne skabelon er specifik til dette projekt da vores tid er placeret på .x i vores JSON objekt.
             const groups = (() => {
-                const byDay = (item) => moment(item.x).format('MM/DD/YYYY'),
-                    formin = (item) => byDay(item) + ' ' + moment(item.x).format('kk:mm')
-                    forHour = (item) => byDay(item) + ' ' + moment(item.x).format('kk:00'),
-                    by6Hour = (item) => {
-                        const m = moment(item.x);
-                        return byDay(item) + ' ' + ['first', 'second', 'third', 'fourth'][Number(m.format('k')) % 6] + ' 6 hours';
-                    },
-                    forMonth = (item) => moment(item.x).format('MMM YYYY'),
-                    forWeek = (item) => forMonth(item) + ' ' + moment(item.x).format('ww');
+                const byDay = (item) => moment(item.x).format('DD/MM/YYYY'),
+                    formin = (item) => byDay(item) + ' ' + moment(item.x).format('kk:mm'),
+                    forHour = (item) => byDay(item) + ' ' + moment(item.x).format('kk:00')
                 return {
                     byDay,
                     formin,
                     forHour,
-                    by6Hour,
-                    forMonth,
-                    forWeek,
                 };
             })();
 
+            // Vi bruger lodash funktion groupBy, til at gruppere vores værdier baseret på hvert minute.
+            // Vi ville have gjort det for hvert 10 minut, men det var en meget mere kompliceret process.
+            // groupBy, tager 2 input. Et array og et objekt. Arrayet indeholder ens værdier man gerne vil gruppere, oh objektet indeholder den metode du vil gruppere ved.
+            // Eks. _.groupBy([6.1, 4.2, 6.3], Math.floor) returnerer => { '4': [4.2], '6': [6.1, 6.3] }
+            // Dette gør det muligt at tilgå specifikke data for den specifikke gruppering
+            // Vores resultat bliver til =>
+            // [{'24/04/2021 14:05': [25, 25, 26, 27, 26]},
+            // {'24/04/2021 14:10': [26, 26, 25, 27, 25]}]
             let tempGroupedData = _.groupBy(temp, groups["formin"])
             let humidGroupedData = _.groupBy(humid, groups["formin"])
-            console.log(humidGroupedData)
 
-            function average(data) {
+            // Denne funktion gør det muligt for os at få den gennemsnitlige temperatur for hver gruppering i vores array fra vores _.groupBy funktion.
+            function average(array) {
+                // Danner 2 arrays til vores JSON objekt keys og values
                 let key = []
                 let value = []
 
-                let keys = Object.keys(data)
+                // Skaffer vores keys fra arrayet.
+                let keys = Object.keys(array)
 
-                for (let i = 0; i < Object.keys(data).length; i++) {
-                    let tempArray = Object.values(data)[i]
+                // For loop der looper gennem længden af keys i arrayet og tilgår værdierne i de forskellige grupperinger.
+                for (let i = 0; i < Object.keys(array).length; i++) {
+
+                    // Her tilgår vi den specifikke gruppering af værdier. Eftersom hver grupperings value indeholder et array af data.
+                    // Så indsætter vi value for grupperingen i dens egen variable, så vi kan tilgå arrayet ligesom et normalt array.
+                    let valueArray = Object.values(array)[i]
                     let sum = 0;
-                    for( let j = 0; j < tempArray.length; j++ ){
-                        sum += parseInt( tempArray[j].y, 10 );
+
+                    // Her looper vi igennem valueArray der indeholder vores temperatur eller humidity for den gruppering.
+                    // Vi tager alle værdierne og lægger dem sammen i variablen sum.
+                    for( let j = 0; j < valueArray.length; j++ ){
+                        sum += parseInt( valueArray[j].y, 10 );
                     }
-                    let tempAvg = sum/tempArray.length
+
+                    // Udregn gennemsnits værdien.
+                    let tempAvg = sum/valueArray.length
+
+                    // Skub resultaterne til de forskellige arrays.
                     key.push(keys[i])
                     value.push(tempAvg)
-
-
                 }
+
+                // Returner når vi har været igennem hele arrayet
                 return {
                     key,
                     value
                 }
             }
 
+            // Kør begge arrays igennem average funktionen og tildel dem en ny variable.
             let tempResult = average(tempGroupedData)
             let humidResult = average(humidGroupedData)
 
@@ -134,10 +161,12 @@
             let indeklima = new Chart(ctx1, {
                 type: 'line',
                 data: {
+                    // Indsæt vores key resultater
                     labels: tempResult.key,
                     datasets: [
                         {
                             label: 'Temperatur',
+                            // Indsæt vores value resultater
                             data: tempResult.value,
                             backgroundColor: 'rgba(0,152,255,0.5)',
                             borderColor: 'rgb(0,152,255)',
@@ -190,10 +219,12 @@
             let vejr = new Chart(ctx2, {
                 type: 'line',
                 data: {
+                    // Indsæt vores key resultater
                     labels: humidResult.key,
                     datasets: [
                         {
                             label: 'Humidity',
+                            // Indsæt vores value resultater
                             data: humidResult.value,
                             borderColor: 'rgba(0,0,255,0.5)',
                             backgroundColor: 'rgba(0,0,255,0.5)',
