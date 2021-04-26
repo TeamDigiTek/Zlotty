@@ -12,6 +12,8 @@ int motorPin = 8;
 
 boolean getting = true;
 
+int port = 80;
+
 //LED PINS!!!
 int gron = 5;
 int rod = 2;
@@ -25,9 +27,9 @@ WiFiClient client;
 
 //Network SSID (navn) & Password kommenteret ud
 char ssid[] = "Eucnvs-Guest";
-// char pass[] = "rfwh3749";
+//char pass[] = "";
 //int keyIndex = 0;            // your network key Index number (needed only for WEP)
-int PORT = 3000;
+int PORT = 80;
 
 //Erklærer at wifi status pt. er IDLE
 int status = WL_IDLE_STATUS;
@@ -159,7 +161,7 @@ void httpGETRequest() {
 
   // Hvis vi får en stabil forbindelse
 
-  if (client.connect(server, 80)) {
+  if (client.connect(server, port)) {
 
     // sender HTTP GET request:
 
@@ -196,7 +198,7 @@ void httpPOSTRequest() {
 
   // Hvis vi får en stabil forbindelse
 
-  if (client.connect(server, 80)) {
+  if (client.connect(server, port)) {
     client.println("POST /arduino HTTP/1.1");
     client.print("Host: ");
     client.println(server);
@@ -296,6 +298,34 @@ void Zlotty(String data) {
     case 5:
       Serial.print("Din case blev nr.");
       Serial.println(val);
+      digitalWrite(gron, HIGH);
+      digitalWrite(rod, HIGH);
+      digitalWrite(hvid, LOW);
+      digitalWrite(bla, LOW);
+      break;
+    case 6:
+      Serial.print("Din case blev nr.");
+      Serial.println(val);
+      digitalWrite(gron, LOW);
+      digitalWrite(rod, LOW);
+      digitalWrite(hvid, HIGH);
+      digitalWrite(bla, HIGH);
+      break;
+    case 7:
+      Serial.print("Din case blev nr.");
+      Serial.println(val);
+      digitalWrite(gron, HIGH);
+      digitalWrite(rod, LOW);
+      digitalWrite(hvid, HIGH);
+      digitalWrite(bla, LOW);
+      break;
+    case 8:
+      Serial.print("Din case blev nr.");
+      Serial.println(val);
+      digitalWrite(gron, LOW);
+      digitalWrite(rod, HIGH);
+      digitalWrite(hvid, LOW);
+      digitalWrite(bla, HIGH);
       break;
     default:
     //Gælder også case 0, som er baggrundsstøj
